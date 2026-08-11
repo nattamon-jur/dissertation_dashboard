@@ -215,37 +215,13 @@ def load_dataset(data_path):
  
  
 @st.cache_data
-def compute_numeric_ranges(_df):
-    """Computes the ACTUAL min/max for every numeric variable from the real
-    dataset, rather than relying on a hardcoded guess. This guarantees that
-    any real data point — including the median used as a default, or a
-    preset value — can never fall outside the slider's own bounds, which
-    was the root cause of a prior crash (a hardcoded 'num_employees maxes
-    around 5000' assumption didn't hold for this dataset's real values)."""
-    ranges = {}
-    for var, (is_int, is_pct) in BASE_NUMERICS.items():
-        if var in _df.columns:
-            lo, hi = _df[var].min(), _df[var].max()
-            if is_int:
-                ranges[var] = (int(np.floor(lo)), int(np.ceil(hi)))
-            else:
-                ranges[var] = (float(lo), float(hi))
-    return ranges
- 
- 
-@st.cache_data
-def compute_defaults(_df, _ranges):
-    defaults = {}
-    for var, (is_int, is_pct) in BASE_NUMERICS.items():
-        if var in _df.columns:
-            med = _df[var].median()
-            lo, hi = _ranges[var]
-            med = min(max(med, lo), hi)  # safety clamp, should already hold
-            defaults[var] = int(round(med)) if is_int else float(med)
-    for var in BASE_CATEGORICALS:
-        if var in _df.columns:
-            defaults[var] = _df[var].mode()[0]
-    return defaults
+def load_config(path="dashboard_config.json"):
+    """Slider bounds and default values, precomputed from the full
+    150,000-observation dataset so the deployed prototype reproduces the
+    figures reported in Chapter 4."""
+    with open(path) as f:
+        cfg = json.load(f)
+    return {k: tuple(v) for k, v in cfg["ranges"].items()}, cfg["defaults"]
  
  
 @st.cache_data
@@ -312,8 +288,7 @@ if df is None:
     st.error(f"Dataset not found at `{DATA_PATH}`.")
     st.stop()
  
-numeric_ranges = compute_numeric_ranges(df)
-defaults = compute_defaults(df, numeric_ranges)
+numeric_ranges, defaults = load_config()
 imp_rev = compute_global_importance(model_revenue, df, TARGET_1)
 imp_cost = compute_global_importance(model_cost, df, TARGET_2)
 main_controls = compute_main_controls(imp_rev, imp_cost)
