@@ -18,7 +18,7 @@ import os
 import re
 import json
  
-MODELS_DIR = "pipeline_outputs/models"
+MODELS_DIR = "models"
 DATA_PATH = "dashboard_data.csv"
 TARGET_1 = "revenue_growth_percent"
 TARGET_2 = "cost_reduction_percent"
